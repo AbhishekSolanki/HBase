@@ -1,25 +1,31 @@
+https://mapr.com/blog/in-depth-look-hbase-architecture/
+
 - region server serves data for read and write
 - region assignment, DDL are handled by Hbase Master process.
 - zookeeper maintains a live cluster
 - all Hbase data is stored in HDFS file
 
 Regions
+========
 - horizontal division of table
 - contains all row in a table between start and end keys
 - regions are assigned to nodes in a cluster called region server
 
 HMaster
+========
 - handles region assignment, ddl operation
 - coordinate the region server. ( assigning region on startup, reassigning region for recovery/load balancing)
 - monitoring all region server instances in the cluster
 
 Zookeeper ( the coordinator )
+==============================
 - Hbase uses zk to maintain the server state in the cluster.
 - zk maintains which servers are alove and available and provides failure notification.
 - resion servers and HMaster connects with a session to zk
 
 
 How it works ?
+==============
 - zk maintains ephermeral nodes for active session via heartbeats
 - HMaster monitors these nodes to discover available region and server failures.
 - zk determines the first node and make sure that it has only one active master.
@@ -27,6 +33,7 @@ How it works ?
 
 
 HBase First Read or Write
+==========================
 - a special HBase catalog called META table, which hold the location of regions in the cluster. Zk stores the location of META table
 - client gets the region server that host the META table from zk
 - the client will query META server to get the region for corresponding row key that it want to access. Client caches the info with META table location
@@ -39,6 +46,7 @@ HBase META Table
 
 
 Region Server Components
+==========================
 - WAL Write Ahead Log is a file on the distributed file system. The WAL is used to store new data that hasn't yet been persisted to permanent storage; it is used for recovery in the case of failure.
 - BlockCache: is the read cache. It stores frequently read data in memory. Least Recently Used data is evicted when full.
 - MemStore: is the write cache. It stores new data which has not yet been written to disk. It is sorted before writing to disk. There is one MemStore per column family per region.
@@ -46,6 +54,7 @@ Region Server Components
 
 
 HBase write steps
+===================
 - when client issues put request. It is first written to WAL
 - after writing to WAL it is placed in the Memstore. The pur request Ack is sent to client
 - there is one MemStore per column family. The updates are sorted per column family
@@ -56,19 +65,25 @@ HBase write steps
 - On region startup, the sequence no, is read and the highest used as the seq no. for new data
 
 HFiles
+========
 - It a sequence wite. It avoids disk seek
 - multi layered index file
 - kv are stores in increasing order
 
 Minor compaction
+=================
 - smaller HFiles to larget HFiles
 - reduces no. of files, uses merge sort
 
 Major compaction
+==================
 - merges all Hfiles in a region to one HFile per column family and drops deleted or expired records.
 a lot of disk IO and nw traffic migh occur
 
 Column Family Properties
+==========================
+https://hbase.apache.org/book.html
+
 - Versions (max no. of versions to keep)
 
 - evict_blocks_on_close=true,false (whether to remove cached blocks from the blockcache on close)
@@ -113,3 +128,48 @@ stay up in the cache (you can get a rough idea on the size you need by surveying
 size accounted near the top of the webpage)
 
 - in_memory_compaction=NONE,BASIC,EAGER,ADAPTIVE
+
+
+Filters
+========
+https://www.cloudera.com/documentation/enterprise/5-5-x/topics/admin_hbase_filtering.html
+
+
+1 KeyOnlyFilter - takes no arguments. Returns the key portion of each key-value pair.
+
+2 FirstKeyOnlyFilter - takes no arguments. Returns the key portion of the first key-value pair.
+
+3 PrefixFilter - takes a single argument, a prefix of a row key. It returns only those key-values present in a row that 
+start with the specified row prefix
+
+4 ColumnPrefixFilter - takes a single argument, a column prefix. It returns only those key-values present in a column that starts with the specified column prefix.
+
+5 MultipleColumnPrefixFilter - takes a list of column prefixes. It returns key-values that are present in a column that starts with any of the specified column prefixes.
+
+6 ColumnCountGetFilter - takes one argument, a limit. It returns the first limit number of columns in the table.
+
+7 PageFilter - takes one argument, a page size. It returns page size number of rows from the table.
+
+8 ColumnPaginationFilter - takes two arguments, a limit and offset. It returns limit number of columns after offset number of columns. It does this for all the rows.
+
+9 InclusiveStopFilter - takes one argument, a row key on which to stop scanning. It returns all key-values present in rows up to and including the specified row.
+
+10 TimeStampsFilter - takes a list of timestamps. It returns those key-values whose timestamps matches any of the specified timestamps.
+
+11 RowFilter - takes a compare operator and a comparator. It compares each row key with the comparator using the compare operator and if the comparison returns true, it returns all the key-values in that row
+
+12 FamilyFilter - takes a compare operator and a comparator. It compares each family name with the comparator using the compare operator and if the comparison returns true, it returns all the key-values in that family.
+
+13 QualifierFilter - takes a compare operator and a comparator. It compares each qualifier name with the comparator using the compare operator and if the comparison returns true, it returns all the key-values in that column.
+
+14 ValueFilter - takes a compare operator and a comparator. It compares each value with the comparator using the compare operator and if the comparison returns true, it returns that ke
+
+15 DependentColumnFilter 
+
+16 SingleColumnValueFilter
+
+17 SingleColumnValueExcludeFilter
+
+18 ColumnRangeFilter
+
+19 Custom Filter - You can create a custom filter by implementing the Filter class. The JAR must be available on all RegionServers.
