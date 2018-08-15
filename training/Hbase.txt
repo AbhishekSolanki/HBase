@@ -73,9 +73,12 @@ Column Family Properties
 
 - evict_blocks_on_close=true,false (whether to remove cached blocks from the blockcache on close)
 
-- new_version_behaviour ( true to specify alternate version, and delete always overshadows put at same location — i.e. same row, column family, qualifier and timestamp — regardless of which arrived first. Version accounting is also changed as deleted versions are considered toward total version count.)
+- new_version_behaviour ( true to specify alternate version, and delete always overshadows put at same location — i.e. 
+same row, column family, qualifier and timestamp — regardless of which arrived first. Version accounting is also changed 
+as deleted versions are considered toward total version count.)
 
-- keep_deleted_cells=true,false (allows for point-in-time queries even in the presence of deletes,Deleted cells are still subject to TTL,"raw" scan options returns all deleted rows and the delete markers )
+- keep_deleted_cells=true,false (allows for point-in-time queries even in the presence of deletes,Deleted cells are 
+still subject to TTL,"raw" scan options returns all deleted rows and the delete markers )
 
 - cache_data_on_write=true,false
 
@@ -91,15 +94,22 @@ Column Family Properties
 
 - cache_index_on_write=true,false
 
-- in_memory=true,false(Tries to keep the HFiles of the CF inmemory as far as possible.  Not guaranteed that reads are always served from inmemory)
+- in_memory=true,false(Tries to keep the HFiles of the CF inmemory as far as possible.  Not guaranteed that reads are 
+always served from inmemory)
 
 - cache_blooms_on_write=true,false
 
-- prefetch_blocks_on_open=true,false (The purpose is to warm the BlockCache as rapidly as possible after the cache is opened, using 
-in-memory table data, and not counting the prefetching as cache misses. This is great for fast reads, but is not a good idea if the data to be preloaded will not fit into the BlockCache. It is useful for tuning the IO impact of prefetching versus the time before all data blocks are in cache)
+- prefetch_blocks_on_open=true,false (The purpose is to warm the BlockCache as rapidly as possible after the cache is opened, 
+using in-memory table data, and not counting the prefetching as cache misses. This is great for fast reads, but is not a good 
+idea if the data to be preloaded will not fit into the BlockCache. It is useful for tuning the IO impact of prefetching 
+versus the time before all data blocks are in cache)
 
 - compression=lzo,snappy
 
-- blockcache=true,false (Do not turn off block cache (You’d do it by setting hfile.block.cache.size to zero). Currently we do not do well if you do this because the RegionServer will spend all its time loading HFile indices over and over again. If your working set is such that block cache does you no good, at least size the block cache such that HFile indices will stay up in the cache (you can get a rough idea on the size you need by surveying RegionServer UIs; you’ll see index block size accounted near the top of the webpage)
+- blockcache=true,false (Do not turn off block cache (You’d do it by setting hfile.block.cache.size to zero). Currently we 
+do not do well if you do this because the RegionServer will spend all its time loading HFile indices over and over again. 
+If your working set is such that block cache does you no good, at least size the block cache such that HFile indices will 
+stay up in the cache (you can get a rough idea on the size you need by surveying RegionServer UIs; you’ll see index block 
+size accounted near the top of the webpage)
 
 - in_memory_compaction=NONE,BASIC,EAGER,ADAPTIVE
