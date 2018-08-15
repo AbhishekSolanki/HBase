@@ -1,0 +1,88 @@
+- region server serves data for read and write
+- region assignment, DDL are handled by Hbase Master process.
+- zookeeper maintains a live cluster
+- all Hbase data is stored in HDFS file
+
+Regions
+- horizontal division of table
+- contains all row in a table between start and end keys
+- regions are assigned to nodes in a cluster called region server
+
+HMaster
+- handles region assignment, ddl operation
+- coordinate the region server. ( assigning region on startup, reassigning region for recovery/load balancing)
+- monitoring all region server instances in the cluster
+
+Zookeeper ( the coordinator )
+- Hbase uses zk to maintain the server state in the cluster.
+- zk maintains which servers are alove and available and provides failure notification.
+- resion servers and HMaster connects with a session to zk
+
+
+How it works ?
+- zk maintains ephermeral nodes for active session via heartbeats
+- HMaster monitors these nodes to discover available region and server failures.
+- zk determines the first node and make sure that it has only one active master.
+- the inactive master listes=ns for notification of HMaster failure from HMaster.
+
+
+HBase First Read or Write
+- a special HBase catalog called META table, which hold the location of regions in the cluster. Zk stores the location of META table
+- client gets the region server that host the META table from zk
+- the client will query META server to get the region for corresponding row key that it want to access. Client caches the info with META table location
+- it will get the row from the corresponding server.
+
+HBase META Table
+- This META table is an HBase table that keeps a list of all regions in the system.
+- The .META. table is like a b tree.
+- it is KV ( region start, region id),region server
+
+
+Region Server Components
+- WAL Write Ahead Log is a file on the distributed file system. The WAL is used to store new data that hasn't yet been persisted to permanent storage; it is used for recovery in the case of failure.
+- BlockCache: is the read cache. It stores frequently read data in memory. Least Recently Used data is evicted when full.
+- MemStore: is the write cache. It stores new data which has not yet been written to disk. It is sorted before writing to disk. There is one MemStore per column family per region.
+- Hfiles store the rows as sorted KeyValues on disk.
+
+
+HBase write steps
+- when client issues put request. It is first written to WAL
+- after writing to WAL it is placed in the Memstore. The pur request Ack is sent to client
+- there is one MemStore per column family. The updates are sorted per column family
+- when MemStore accumulates enough data, the entire sorted set is written to a new HFile.
+- HBase uses multiple HFiles per column family.
+- MemStores saves the last written seq no. so it knows what is persisted so far
+- the highest seq no. is stored as meta field in each HFile, to reflect where persistance has ended and where to continue. 
+- On region startup, the sequence no, is read and the highest used as the seq no. for new data
+
+HFiles
+- It a sequence wite. It avoids disk seek
+- multi layered index file
+- kv are stores in increasing order
+
+Minor compaction
+- smaller HFiles to larget HFiles
+- reduces no. of files, uses merge sort
+
+Major compaction
+- merges all Hfiles in a region to one HFile per column family and drops deleted or expired records.
+a lot of disk IO and nw traffic migh occur
+
+Column Family Properties
+- Versions
+- evict_blocks_on_close
+- new_version_behaviour
+- keep_deleted_cells
+- cache_data_on_write
+- data_block_encoding
+- TTL
+- min_version
+- replicstion_scope
+- bloomfilter
+- cache_index_on_write
+- in_memory
+- cache_blooms_on_write
+- prefetch_blocks_on_open
+- compression
+- blockcache
+- in_memory_compaction=NONE,BASIC,EAGER,ADAPTIVE
